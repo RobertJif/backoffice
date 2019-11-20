@@ -11,7 +11,7 @@ export default {
     },
     {
       name: 'Affiliate Information',
-      url: '/affiliate-info',
+      url: '/affiliate-information',
       icon: 'icon-people',
       badge: {
         variant: 'primary',
