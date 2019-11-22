@@ -85,6 +85,7 @@ export default {
     },
     rowClicked (item) {
       this.$emit('row-clicked', item)
+      
     }
   }
 }

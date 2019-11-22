@@ -1,5 +1,6 @@
 <template>
   <div class="animated fadeIn">
+    <b-card>
     <b-row>
       <b-col sm="6" lg="3">
         <b-form-select v-model="affiliates.selected" :options="affiliates.options" value-field="code" text-field="code"></b-form-select>
@@ -10,20 +11,17 @@
       <b-col sm="6" lg="3">
         <b-form-select v-model="activeChart.selected" :options="activeChart.options"></b-form-select>
       </b-col>
-      
-      <b-col sm="6" lg="3">
-        <b-button variant="primary" v-on:click="update()">Update</b-button>
-      </b-col>
 
     </b-row>
+    <hr>
     <b-row>
       <b-col sm="6" lg="3">
           <br>
       </b-col>
     </b-row>
-    <b-card>
+
       <b-row>
-        <b-col sm="5">
+        <b-col sm="12" lg="12">
           <h4 id="traffic" class="card-title mb-0">{{affiliates.selected}}</h4>
           <div class="small text-muted">{{forecast.lastUpdated}}</div>
         </b-col>
@@ -48,7 +46,7 @@
                 <b-col sm="12" lg="12">
                     <h3>WIN/LOSS</h3>
                     <br>
-                    <h4>{{forecast.totalRevenue}}</h4>
+                    <h4>{{ forecast.currency }} {{forecast.totalRevenue}}</h4>
                     <hr>
                 </b-col>
             </b-row>
@@ -56,7 +54,7 @@
                 <b-col sm="12" lg="12">
                     <h3>STAKE</h3>
                     <br>
-                    <h4>{{forecast.totalTurnover}}</h4>
+                    <h4>{{ forecast.currency }} {{forecast.totalTurnover}}</h4>
                 </b-col>
             </b-row>
           </b-col>
@@ -64,13 +62,23 @@
             <b-row>
               <b-col sm="12" lg="12">
                 <h3>Commission Forecast</h3>
-                <h4>Total: {{forecast.totalAmount}}</h4>
+                <h4>Total: {{ forecast.currency }} {{forecast.totalAmount}}</h4>
               </b-col>
             </b-row>
             <b-row>
               <b-col sm="12" lg="12">
-                  <line-chart v-if="activeChart.selected == '0'" chartId="line-chart" class="chart-wrapper" style="height:300px;margin-top:40px;" height="300" v-bind:chartData="lineChartData"></line-chart>
-                  <column-chart v-if="activeChart.selected == '1'" chartId="column-chart" class="chart-wrapper" style="height:300px;margin-top:40px;" height="300" v-bind:chartData="columnChartData"></column-chart>
+                  <line-chart v-if="activeChart.selected == '0'" chartId="line-chart" class="chart-wrapper" style="height:300px;margin-top:40px;" height="300" 
+                  :chartData="lineChartData.data" 
+                  :chartSeries="lineChartData.series"
+                  :currency="forecast.currency"
+                  @openDetail="openDetails($event)"
+                  ></line-chart>
+                  <column-chart v-if="activeChart.selected == '1'" chartId="column-chart" class="chart-wrapper" style="height:300px;margin-top:40px;" height="300" 
+                  :chartRevenue="columnChartData.revenue"
+                  :chartSeries="columnChartData.series"
+                  :chartTurnover="columnChartData.turnover"
+                  :currency="forecast.currency"
+                  ></column-chart>
               </b-col>
             </b-row>
           </b-col>
@@ -86,6 +94,7 @@ import LineChart from './dashboard/LineChart'
 import ColumnChart from './dashboard/ColumnChart'
 import { Callout } from '@coreui/vue'
 import axios from 'axios'
+import _xnconvert from '@/mylib/xn-data-convert-engine'
 
 export default {
   name: 'CommissionForecast',
@@ -119,31 +128,54 @@ export default {
         totalAmount: 0,
         totalWager: 0,
         totalRevenue: 0,
-        totalTurnover: 0
+        totalTurnover: 0,
+        currency: ""
       },
-      lineChartData:[],
-      columnChartData:[]
+      lineChartData:{
+        data: [],
+        series: []
+      },
+      columnChartData:{
+        revenue: [],
+        turnover: [],
+        series: []
+      }
+    }
+  },
+  watch:{
+    'affiliates.selected': {
+        handler: function (val, oldVal) {
+            if(val != oldVal && oldVal != null){
+              this.loadForecast()
+            }
+        },
+        deep: true
+    },
+    'currencyTypes.selected': {
+        handler: function (val, oldVal) {
+            if(val != oldVal && oldVal != null){
+              this.loadForecast()
+            }
+        },
+        deep: true
     }
   },
   mounted () {
-       console.log(process.env.VUE_APP_REPORT_API_URL)
-    // axios
-    //   .get(process.env.VUE_APP_AFFILIATE_API_URL + 'affiliates')
-    //   .then(response => {
-    //     this.affiliates.options = response.data
-    //     this.affiliates.selected = response.data[0].code
-    //   })
-    //   .catch(error => {
-    //     console.log(error)
-    //   })
-
-    axios.all([
+      this.loadForecast()
+    },
+  methods: {
+    loadForecast(){
+      axios.all([
         axios.get(process.env.VUE_APP_AFFILIATE_API_URL + 'affiliates')
         //,axios.get(process.env.VUE_APP_REPORT_API_URL + 'product-templates')
       ])
       .then(axios.spread((affiliateRes) => {
         this.affiliates.options = affiliateRes.data
-        this.affiliates.selected = affiliateRes.data[0].code
+
+        if(this.affiliates.selected == null){
+            this.affiliates.selected = affiliateRes.data[0].code
+        }
+
         const params = {
           affcode: this.affiliates.selected,
           startDate: '01-11-2019',
@@ -152,23 +184,45 @@ export default {
         }
 
         axios.get(process.env.VUE_APP_REPORT_API_URL + 'forecast', {params}).then(response => {
+          console.log(response.data.columnChartData)
           this.forecast.totalAmount = response.data.totalAmount
           this.forecast.totalWager = response.data.totalWagerCount
           this.forecast.totalRevenue = response.data.totalGrossRevenue
           this.forecast.totalTurnover = response.data.totalTurnover
+          this.forecast.currency = response.data.currency
+          
+          if(response.data.lineChartData != undefined){
+            this.lineChartData.data = response.data.lineChartData.map((item) => item.amount)
+            this.lineChartData.series = response.data.lineChartData.map((item) => _xnconvert.formatDate(new Date(item.date), 'dd-mm-yyyy').toString())
+          }else{
+            this.lineChartData.data = []
+            this.lineChartData.series = []
+          }
 
-          this.lineChartData = response.data.lineChartData
-          this.columnChartData = response.data.columnChartData
+          if(response.data.columnChartData != undefined){
+            this.columnChartData.turnover = response.data.columnChartData.map((item) => item.turnover)
+            this.columnChartData.revenue = response.data.columnChartData.map((item) => item.grossRevenue)
+            this.columnChartData.series = response.data.columnChartData.map((item) => item.productCode)
+          }else{
+            this.columnChartData.turnover = []
+            this.columnChartData.revenue = []
+            this.columnChartData.series = []
+          }
         })
-        //this.products = productRes.data
       }))
       .catch(error => {
         console.log(error)
       })
     },
-  methods: {
-    update(){
-      this.forecast.totalAmount = 300
+    openDetails(forecastDate){
+      this.$router.push({
+          name: 'Affiliate Information', 
+          params: { 
+            affCode: this.affiliates.selected,
+            forecastDate: forecastDate,
+            currencyType: this.currencyTypes.selected
+          }
+      });
     }
   }
 }
