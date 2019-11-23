@@ -52,6 +52,7 @@
     "growl": "^1.10.5",
     "https-proxy-agent": "^2.2.1",
     "node-sass": "^4.12.0",
+    "prettier": "^1.19.1",
     "sass-loader": "^7.1.0",
     "vue-template-compiler": "^2.6.10"
   },
