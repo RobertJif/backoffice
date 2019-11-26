@@ -1,7 +1,7 @@
 <template>
   <div class="animated fadeIn">
-    <commission-template></commission-template>
-    <b-card class="animated fadeIn" v-if="activePage == ''">
+    <commission-template v-if="activePage == 'create'"></commission-template>
+    <b-card class="animated fadeIn" v-if="activePage == 'index'">
       <h1>Commission Setting Management</h1>
       <br />
       <b-button variant="primary" @click="activePage = 'create'"
@@ -87,7 +87,7 @@ import axios from "axios";
 import _xnconvert from "@/mylib/xn-data-convert-engine";
 
 export default {
-  name: "AffiliateInformation",
+  name: "CommissionSetting",
   components: {
     Callout,
     CommissionTemplate

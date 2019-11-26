@@ -88,7 +88,11 @@ export default {
   },
   mounted() {
     axios
-      .all([axios.get(process.env.VUE_APP_AFFILIATE_API_URL + "affiliates")])
+      .all([
+        axios.get(
+          process.env.VUE_APP_AFFILIATE_MANAGEMENT_API_URL + "affiliates"
+        )
+      ])
       .then(
         axios.spread(affiliateRes => {
           this.affiliates = affiliateRes.data;

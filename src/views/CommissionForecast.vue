@@ -186,9 +186,12 @@ export default {
   },
   methods: {
     loadForecast() {
+      console.log(process.env.VUE_APP_AFFILIATE_MANAGEMENT_API_URL + "affiliates")
       axios
         .all([
-          axios.get(process.env.VUE_APP_AFFILIATE_API_URL + "affiliates")
+          axios.get(
+            process.env.VUE_APP_AFFILIATE_MANAGEMENT_API_URL + "affiliates"
+          )
           //,axios.get(process.env.VUE_APP_REPORT_API_URL + 'product-templates')
         ])
         .then(
